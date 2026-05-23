@@ -63,14 +63,32 @@ jobs:
           test -f "${HOME}/.local/share/godot/export_templates/4.2.2.stable/android_debug.apk"
           test -f "${HOME}/.local/share/godot/export_templates/4.2.2.stable/android_release.apk"
 
-      - name: Export Android APK
+      - name: Create debug keystore
         run: |
+          mkdir -p "${HOME}/.android"
+          keytool -genkeypair -v \
+            -keystore "${HOME}/.android/debug.keystore" \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US" \
+            -noprompt
+
+      - name: Export signed Android APK
+        run: |
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="${HOME}/.android/debug.keystore"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_USER="androiddebugkey"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD="android"
           mkdir -p build/android
-          ./"${GODOT_EDITOR_BIN}" --headless --path . --export-release "Android" build/android/game.apk
+          ./"${GODOT_EDITOR_BIN}" --headless --path . --export-debug "Android" build/android/game.apk
+          "${ANDROID_SDK_ROOT}/build-tools/33.0.2/apksigner" verify --verbose build/android/game.apk
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: android-apk
+          name: android-debug-apk
           path: build/android/game.apk
           if-no-files-found: error
