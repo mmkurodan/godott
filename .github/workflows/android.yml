@@ -20,7 +20,7 @@ jobs:
     steps:
       - name: Checkout
         # Termux から push された内容をそのまま取得します。
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v5
 
       - name: Download Godot Editor
         # Linux x86_64 版の Godot Editor を取得し、
