@@ -1,0 +1,26 @@
+; Engine configuration file.
+; Godot 4.x で読み込める最小構成のプロジェクト設定です。
+; Android 向けのモバイルレンダラーを前提にしています。
+
+config_version=5
+
+[application]
+
+config/name="Godott Room Demo"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.2", "Mobile")
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+
+[physics]
+
+3d/default_gravity=0.0
+
+[rendering]
+
+renderer/rendering_method="mobile"
+renderer/rendering_method.mobile="mobile"
+textures/vram_compression/import_etc2_astc=true

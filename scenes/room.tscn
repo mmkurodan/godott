@@ -1,0 +1,65 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/mover.gd" id="1_mover"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.2, 0.22, 0.27, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
+albedo_color = Color(0.76, 0.8, 0.86, 1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ball"]
+albedo_color = Color(0.95, 0.35, 0.22, 1)
+roughness = 0.25
+
+[sub_resource type="BoxMesh" id="BoxMesh_slab"]
+size = Vector3(10, 0.1, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_side_wall"]
+size = Vector3(0.1, 10, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_front_wall"]
+size = Vector3(10, 10, 0.1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_ball"]
+radius = 0.5
+
+[node name="Room" type="Node3D"]
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+position = Vector3(0, -5.05, 0)
+mesh = SubResource("BoxMesh_slab")
+material_override = SubResource("StandardMaterial3D_floor")
+
+[node name="Ceiling" type="MeshInstance3D" parent="."]
+position = Vector3(0, 5.05, 0)
+mesh = SubResource("BoxMesh_slab")
+material_override = SubResource("StandardMaterial3D_wall")
+
+[node name="LeftWall" type="MeshInstance3D" parent="."]
+position = Vector3(-5.05, 0, 0)
+mesh = SubResource("BoxMesh_side_wall")
+material_override = SubResource("StandardMaterial3D_wall")
+
+[node name="RightWall" type="MeshInstance3D" parent="."]
+position = Vector3(5.05, 0, 0)
+mesh = SubResource("BoxMesh_side_wall")
+material_override = SubResource("StandardMaterial3D_wall")
+
+[node name="BackWall" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, -5.05)
+mesh = SubResource("BoxMesh_front_wall")
+material_override = SubResource("StandardMaterial3D_wall")
+
+[node name="FrontWall" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, 5.05)
+mesh = SubResource("BoxMesh_front_wall")
+material_override = SubResource("StandardMaterial3D_wall")
+
+[node name="Mover" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, 0)
+mesh = SubResource("SphereMesh_ball")
+material_override = SubResource("StandardMaterial3D_ball")
+script = ExtResource("1_mover")
