@@ -59,7 +59,9 @@ jobs:
           rm -rf /tmp/godot-templates
           mkdir -p /tmp/godot-templates
           unzip -q "${GODOT_TEMPLATES_TPZ}" -d /tmp/godot-templates
-          cp -R /tmp/godot-templates/* "${HOME}/.local/share/godot/export_templates/4.2.2.stable/"
+          cp -R /tmp/godot-templates/templates/. "${HOME}/.local/share/godot/export_templates/4.2.2.stable/"
+          test -f "${HOME}/.local/share/godot/export_templates/4.2.2.stable/android_debug.apk"
+          test -f "${HOME}/.local/share/godot/export_templates/4.2.2.stable/android_release.apk"
 
       - name: Export Android APK
         run: |
