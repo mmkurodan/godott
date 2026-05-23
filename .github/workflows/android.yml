@@ -60,6 +60,7 @@ jobs:
         run: |
           test -d android/build
           chmod +x android/build/gradlew
+          unzip -p "${GODOT_TEMPLATES_TPZ}" templates/version.txt > android/.build_version
           printf 'sdk.dir=%s\n' "${ANDROID_SDK_ROOT}" > android/build/local.properties
 
       - name: Export Android APK
