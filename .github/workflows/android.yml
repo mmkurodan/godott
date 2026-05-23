@@ -53,7 +53,8 @@ jobs:
           rm -rf /tmp/godot-templates
           mkdir -p /tmp/godot-templates
           unzip -q "${GODOT_TEMPLATES_TPZ}" -d /tmp/godot-templates
-          cp -R /tmp/godot-templates/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_FLAVOR}/"
+          # ★ ここが最重要：templates/ の中身だけをコピーする
+          cp -R /tmp/godot-templates/templates/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_FLAVOR}/"
 
       - name: Clear Godot cache
         run: |
