@@ -49,11 +49,11 @@ jobs:
       - name: Download Export Templates
         run: |
           wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_FLAVOR}/${GODOT_TEMPLATES_TPZ}"
-          mkdir -p "${HOME}/.local/share/godot/export_templates/4.2.stable"
+          mkdir -p "${HOME}/.local/share/godot/export_templates/4.2.2.stable"
           rm -rf /tmp/godot-templates
           mkdir -p /tmp/godot-templates
           unzip -q "${GODOT_TEMPLATES_TPZ}" -d /tmp/godot-templates
-          cp -R /tmp/godot-templates/templates/* "${HOME}/.local/share/godot/export_templates/4.2.stable/"
+          cp -R /tmp/godot-templates/templates/* "${HOME}/.local/share/godot/export_templates/4.2.2.stable/"
 
       - name: Clear Godot cache
         run: |
