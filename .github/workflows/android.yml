@@ -30,6 +30,12 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Restore debug keystore
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: android-debug-keystore-v1
+
       - name: Clear Godot cache
         run: |
           rm -rf ~/.config/godot
@@ -66,16 +72,18 @@ jobs:
       - name: Create debug keystore
         run: |
           mkdir -p "${HOME}/.android"
-          keytool -genkeypair -v \
-            -keystore "${HOME}/.android/debug.keystore" \
-            -storepass android \
-            -alias androiddebugkey \
-            -keypass android \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Android Debug,O=Android,C=US" \
-            -noprompt
+          if [ ! -f "${HOME}/.android/debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore "${HOME}/.android/debug.keystore" \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US" \
+              -noprompt
+          fi
 
       - name: Export signed Android APK
         run: |
