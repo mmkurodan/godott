@@ -42,13 +42,15 @@ jobs:
 
       - name: Download Godot Editor
         run: |
-          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_FLAVOR}/${GODOT_EDITOR_ZIP}"
+          wget --content-disposition --trust-server-names -q \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_FLAVOR}/${GODOT_EDITOR_ZIP}"
           unzip -q "${GODOT_EDITOR_ZIP}"
           chmod +x "${GODOT_EDITOR_BIN}"
 
       - name: Download Export Templates
         run: |
-          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_FLAVOR}/${GODOT_TEMPLATES_TPZ}"
+          wget --content-disposition --trust-server-names -q \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_FLAVOR}/${GODOT_TEMPLATES_TPZ}"
           mkdir -p "${HOME}/.local/share/godot/export_templates/4.2.2.stable"
           rm -rf /tmp/godot-templates
           mkdir -p /tmp/godot-templates
