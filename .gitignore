@@ -8,6 +8,10 @@
 /app/build/
 /local.properties
 /test_logs_*/
+/android/build/.gradle/
+/android/build/.kotlin/
+/android/build/build/
+/android/build/assetPacks/installTime/build/
 
 *.apk
 *.aab

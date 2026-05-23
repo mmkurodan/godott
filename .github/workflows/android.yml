@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # Godot 4.x の固定バージョンです。
+      # Godot 4.2.2 の固定バージョンです。
       GODOT_VERSION: "4.2.2"
       GODOT_FLAVOR: "stable"
       GODOT_EDITOR_ZIP: "Godot_v4.2.2-stable_linux.x86_64.zip"
@@ -19,20 +19,35 @@ jobs:
 
     steps:
       - name: Checkout
-        # Termux から push された内容をそのまま取得します。
         uses: actions/checkout@v5
 
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-33" \
+            "platforms;android-34" \
+            "build-tools;33.0.2" \
+            "build-tools;34.0.0" \
+            "ndk;23.2.8568313"
+
       - name: Download Godot Editor
-        # Linux x86_64 版の Godot Editor を取得し、
-        # headless export に使えるように実行権限を付けます。
         run: |
           wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_FLAVOR}/${GODOT_EDITOR_ZIP}"
           unzip -q "${GODOT_EDITOR_ZIP}"
           chmod +x "${GODOT_EDITOR_BIN}"
 
       - name: Download Export Templates
-        # Godot 4.x は ~/.local/share/godot/export_templates/<version>.stable/
-        # に templates を置くと headless export で参照できます。
         run: |
           wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_FLAVOR}/${GODOT_TEMPLATES_TPZ}"
           mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_FLAVOR}"
@@ -41,15 +56,18 @@ jobs:
           unzip -q "${GODOT_TEMPLATES_TPZ}" -d /tmp/godot-templates
           cp -R /tmp/godot-templates/templates/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_FLAVOR}/"
 
+      - name: Prepare Android custom build
+        run: |
+          test -d android/build
+          chmod +x android/build/gradlew
+          printf 'sdk.dir=%s\n' "${ANDROID_SDK_ROOT}" > android/build/local.properties
+
       - name: Export Android APK
-        # export_presets.cfg の Android プリセット名と一致させて、
-        # unsigned APK を build/android/game.apk に出力します。
         run: |
           mkdir -p build/android
           ./"${GODOT_EDITOR_BIN}" --headless --path . --export-release "Android" build/android/game.apk
 
       - name: Upload Artifact
-        # 生成された APK を GitHub Actions の artifact として保存します。
         uses: actions/upload-artifact@v4.6.2
         with:
           name: android-apk
