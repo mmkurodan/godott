@@ -10,8 +10,11 @@
 /test_logs_*/
 /android/build/.gradle/
 /android/build/.kotlin/
+/android/build/.idea/
+/android/build/.cxx/
 /android/build/build/
 /android/build/assetPacks/installTime/build/
+/android/build/local.properties
 
 *.apk
 *.aab

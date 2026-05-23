@@ -7,6 +7,7 @@ config_version=5
 [application]
 
 config/name="Godot Room Demo"
+config/icon="res://android/build/res/drawable-nodpi/splash.png"
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.2", "Mobile")
 
