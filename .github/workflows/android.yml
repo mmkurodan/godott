@@ -30,7 +30,16 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Restore signing keystore from secret
+        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p "${HOME}/.android"
+          printf '%s' "${KEYSTORE_BASE64}" | base64 --decode > "${HOME}/.android/debug.keystore"
+
       - name: Restore debug keystore
+        if: ${{ secrets.KEYSTORE_BASE64 == '' }}
         uses: actions/cache@v4
         with:
           path: ~/.android/debug.keystore
@@ -86,10 +95,15 @@ jobs:
           fi
 
       - name: Export signed Android APK
+        env:
+          KEYSTORE_USER: ${{ secrets.KEYSTORE_USER }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
+          keystore_user="${KEYSTORE_USER:-androiddebugkey}"
+          keystore_password="${KEYSTORE_PASSWORD:-android}"
           export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="${HOME}/.android/debug.keystore"
-          export GODOT_ANDROID_KEYSTORE_DEBUG_USER="androiddebugkey"
-          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD="android"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_USER="${keystore_user}"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD="${keystore_password}"
           mkdir -p build/android
           ./"${GODOT_EDITOR_BIN}" --headless --path . --export-debug "Android" build/android/game.apk
           "${ANDROID_SDK_ROOT}/build-tools/33.0.2/apksigner" verify --verbose build/android/game.apk
