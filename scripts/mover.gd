@@ -10,6 +10,7 @@ extends MeshInstance3D
 
 # 指定どおり 3.0 m/s で移動させます。
 @export var speed: float = 3.0
+@export var swipe_steer_strength: float = 4.0
 
 # 毎回違う向きに飛び出すように乱数生成器を持たせます。
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -57,6 +58,29 @@ func _physics_process(delta: float) -> void:
 
 	# 反射後の座標を反映します。
 	position = next_position
+
+
+func apply_swipe_impulse(screen_delta: Vector2, camera_basis: Basis, viewport_size: Vector2) -> void:
+	var viewport_scale := maxf(1.0, minf(viewport_size.x, viewport_size.y))
+	var swipe_ratio := clampf(screen_delta.length() / viewport_scale, 0.0, 1.0)
+
+	if swipe_ratio <= 0.0:
+		return
+
+	var world_direction := (
+		camera_basis.x * screen_delta.x +
+		camera_basis.y * -screen_delta.y
+	)
+
+	if world_direction.length_squared() < 0.0001:
+		return
+
+	var steered_velocity := _velocity + world_direction.normalized() * speed * swipe_steer_strength * swipe_ratio
+
+	if steered_velocity.length_squared() < 0.0001:
+		return
+
+	_velocity = steered_velocity.normalized() * speed
 
 
 func _random_direction() -> Vector3:
