@@ -1,4 +1,5 @@
 extends MeshInstance3D
+class_name Mover
 
 # 部屋の半分の長さです。
 # 10m の立方体なので、中心から各壁までは 5m です。
