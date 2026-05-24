@@ -1,7 +1,7 @@
 extends Node3D
 
 const INITIAL_LIVES: int = 3
-const ROUND_DELAY: float = 0.9
+const ROUND_DELAY: float = 1.2
 const RESET_DELAY: float = 1.6
 
 @onready var paddle = $Paddle
@@ -10,12 +10,15 @@ const RESET_DELAY: float = 1.6
 @onready var block_manager = $BlockManager
 @onready var miss_zone: Area3D = $MissZone
 @onready var ui = $UI
+@onready var round_timer: Timer = $RoundTimer
+@onready var restart_timer: Timer = $RestartTimer
 
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _score: int = 0
 var _lives: int = INITIAL_LIVES
 var _round_token: int = 0
 var _game_finished: bool = false
+var _restart_requested: bool = false
 
 
 func _ready() -> void:
@@ -23,12 +26,17 @@ func _ready() -> void:
 	miss_zone.body_entered.connect(_on_miss_zone_body_entered)
 	block_manager.block_broken.connect(_on_block_broken)
 	block_manager.all_blocks_cleared.connect(_on_all_blocks_cleared)
+	round_timer.timeout.connect(_on_round_timer_timeout)
+	restart_timer.timeout.connect(_on_restart_timer_timeout)
 	_start_new_game()
 
 
 func _start_new_game() -> void:
+	round_timer.stop()
+	restart_timer.stop()
 	_round_token += 1
 	_game_finished = false
+	_restart_requested = false
 	_score = 0
 	_lives = INITIAL_LIVES
 	ui.update_score(_score)
@@ -41,28 +49,28 @@ func _prepare_round(token: int, message: String, delay: float) -> void:
 	paddle.reset_paddle()
 	ball.reset_ball(ball_spawn.global_transform)
 	ui.show_message(message)
-	_schedule_launch_round(token, delay)
+	round_timer.set_meta("round_token", token)
+	round_timer.start(delay)
 
 
-func _schedule_launch_round(token: int, delay: float) -> void:
-	var timer := get_tree().create_timer(delay)
-	timer.timeout.connect(func() -> void:
-		if token != _round_token or _game_finished:
-			return
-		ui.show_message("")
-		ball.launch(_random_launch_direction())
-	)
+func _on_round_timer_timeout() -> void:
+	var token: int = int(round_timer.get_meta("round_token", -1))
+	if token != _round_token or _game_finished:
+		return
+	ui.show_message("")
+	ball.launch(_random_launch_direction())
 
 
 func _restart_after_delay(message: String) -> void:
-	var token := _round_token
 	ui.show_message(message)
-	var timer := get_tree().create_timer(RESET_DELAY)
-	timer.timeout.connect(func() -> void:
-		if token != _round_token:
-			return
-		_start_new_game()
-	)
+	_restart_requested = true
+	restart_timer.start(RESET_DELAY)
+
+
+func _on_restart_timer_timeout() -> void:
+	if not _restart_requested:
+		return
+	_start_new_game()
 
 
 func _random_launch_direction() -> Vector3:

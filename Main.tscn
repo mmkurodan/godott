@@ -27,11 +27,11 @@ script = ExtResource("1_4gsmt")
 environment = SubResource("Environment_h2cda")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-position = Vector3(0, 1.35, 7.2)
-rotation_degrees = Vector3(-8, 0, 0)
+position = Vector3(0, 0.2, 14.0)
 current = true
-fov = 70.0
 near = 0.05
+projection = 1
+size = 6.8
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-52, 28, 0)
@@ -55,6 +55,12 @@ position = Vector3(0, -3.65, 5.1)
 position = Vector3(0, -3.65, 5.1)
 
 [node name="BlockManager" parent="." instance=ExtResource("5_5xt3l")]
+
+[node name="RoundTimer" type="Timer" parent="."]
+one_shot = true
+
+[node name="RestartTimer" type="Timer" parent="."]
+one_shot = true
 
 [node name="MissZone" type="Area3D" parent="."]
 position = Vector3(0, -6.1, 0)

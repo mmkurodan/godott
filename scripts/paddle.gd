@@ -24,13 +24,17 @@ func reset_paddle() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch and event.pressed:
-		_target_x = _screen_to_world_x(event.position)
+		var touch := event as InputEventScreenTouch
+		_target_x = _screen_to_world_x(touch.position)
 	elif event is InputEventScreenDrag:
-		_target_x = _screen_to_world_x(event.position)
+		var drag := event as InputEventScreenDrag
+		_target_x = _screen_to_world_x(drag.position)
 	elif event is InputEventMouseMotion:
-		_target_x = _screen_to_world_x(event.position)
+		var motion := event as InputEventMouseMotion
+		_target_x = _screen_to_world_x(motion.position)
 	elif event is InputEventMouseButton and event.pressed:
-		_target_x = _screen_to_world_x(event.position)
+		var button := event as InputEventMouseButton
+		_target_x = _screen_to_world_x(button.position)
 
 
 func _physics_process(delta: float) -> void:

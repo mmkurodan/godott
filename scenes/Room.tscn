@@ -96,6 +96,7 @@ shape = SubResource("BoxShape3D_front_back")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="FrontWall"]
 mesh = SubResource("BoxMesh_front_back")
 material_override = SubResource("StandardMaterial3D_wall")
+visible = false
 
 [node name="Ceiling" type="StaticBody3D" parent="."]
 position = Vector3(0, 5.175, 0)
