@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_4gsmt"]
 [ext_resource type="PackedScene" path="res://scenes/Room.tscn" id="2_ap1l5"]
@@ -16,6 +16,34 @@ ambient_light_energy = 0.85
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_miss"]
 size = Vector3(16, 1, 24)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_debug_red"]
+albedo_color = Color(1, 0.2, 0.2, 1)
+emission_enabled = true
+emission = Color(0.9, 0.15, 0.15, 1)
+roughness = 0.15
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_debug_green"]
+albedo_color = Color(0.25, 1, 0.35, 1)
+emission_enabled = true
+emission = Color(0.15, 0.75, 0.2, 1)
+roughness = 0.15
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_debug_blue"]
+albedo_color = Color(0.25, 0.65, 1, 1)
+emission_enabled = true
+emission = Color(0.1, 0.35, 0.8, 1)
+roughness = 0.15
+
+[sub_resource type="BoxMesh" id="BoxMesh_debug_long"]
+size = Vector3(3.2, 0.1, 0.1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_debug_vertical"]
+size = Vector3(0.1, 2.4, 0.1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_debug_beacon"]
+radius = 0.24
+height = 0.48
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_4gsmt")
@@ -44,6 +72,26 @@ omni_range = 20.0
 position = Vector3(0, 2.5, -5.5)
 light_energy = 2.0
 omni_range = 22.0
+
+[node name="DebugAnchor" type="Node3D" parent="."]
+position = Vector3(0, -1.0, 0)
+
+[node name="AxisX" type="MeshInstance3D" parent="DebugAnchor"]
+mesh = SubResource("BoxMesh_debug_long")
+material_override = SubResource("StandardMaterial3D_debug_red")
+
+[node name="AxisY" type="MeshInstance3D" parent="DebugAnchor"]
+mesh = SubResource("BoxMesh_debug_vertical")
+material_override = SubResource("StandardMaterial3D_debug_green")
+
+[node name="AxisZ" type="MeshInstance3D" parent="DebugAnchor"]
+rotation_degrees = Vector3(0, 90, 0)
+mesh = SubResource("BoxMesh_debug_long")
+material_override = SubResource("StandardMaterial3D_debug_blue")
+
+[node name="Beacon" type="MeshInstance3D" parent="DebugAnchor"]
+mesh = SubResource("SphereMesh_debug_beacon")
+material_override = SubResource("StandardMaterial3D_debug_green")
 
 [node name="Room" parent="." instance=ExtResource("2_ap1l5")]
 

@@ -34,7 +34,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_target_x = _screen_to_world_x(motion.position)
 	elif event is InputEventMouseButton and event.pressed:
 		var button := event as InputEventMouseButton
-		_target_x = _screen_to_world_x(button.position)
+		if button.button_index == MOUSE_BUTTON_LEFT:
+			_target_x = _screen_to_world_x(button.position)
 
 
 func _physics_process(delta: float) -> void:
