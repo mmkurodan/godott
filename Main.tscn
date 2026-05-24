@@ -9,13 +9,10 @@
 
 [sub_resource type="Environment" id="Environment_h2cda"]
 background_mode = 1
-background_color = Color(0.0352941, 0.0431373, 0.0784314, 1)
+background_color = Color(0.0784314, 0.0941176, 0.145098, 1)
 ambient_light_source = 2
-ambient_light_color = Color(0.6, 0.67, 0.78, 1)
-ambient_light_energy = 0.35
-glow_enabled = true
-glow_bloom = 0.05
-tonemap_mode = 2
+ambient_light_color = Color(0.92, 0.95, 1, 1)
+ambient_light_energy = 0.85
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_miss"]
 size = Vector3(16, 1, 24)
@@ -27,21 +24,26 @@ script = ExtResource("1_4gsmt")
 environment = SubResource("Environment_h2cda")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-position = Vector3(0, 2.2, 13.5)
-rotation_degrees = Vector3(-10, 0, 0)
+position = Vector3(0, -0.6, 7.25)
+rotation_degrees = Vector3(-8, 0, 0)
 current = true
 near = 0.05
-fov = 58.0
+fov = 72.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-52, 28, 0)
-light_energy = 1.8
+light_energy = 2.4
 shadow_enabled = true
 
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
-position = Vector3(0, 3.3, 1.5)
-light_energy = 1.2
+position = Vector3(0, 1.8, 4.8)
+light_energy = 3.0
 omni_range = 20.0
+
+[node name="OmniLightRear" type="OmniLight3D" parent="."]
+position = Vector3(0, 2.5, -5.5)
+light_energy = 2.0
+omni_range = 22.0
 
 [node name="Room" parent="." instance=ExtResource("2_ap1l5")]
 
