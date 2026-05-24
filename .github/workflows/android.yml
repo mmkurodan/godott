@@ -16,6 +16,7 @@ jobs:
       GODOT_EDITOR_ZIP: "Godot_v4.2.2-stable_linux.x86_64.zip"
       GODOT_EDITOR_BIN: "Godot_v4.2.2-stable_linux.x86_64"
       GODOT_TEMPLATES_TPZ: "Godot_v4.2.2-stable_export_templates.tpz"
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
     steps:
       - name: Checkout
@@ -31,16 +32,14 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Restore signing keystore from secret
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
         run: |
           mkdir -p "${HOME}/.android"
           printf '%s' "${KEYSTORE_BASE64}" | base64 --decode > "${HOME}/.android/debug.keystore"
           : > "${HOME}/.android/use-secret-keystore"
 
       - name: Restore debug keystore
-        if: ${{ secrets.KEYSTORE_BASE64 == '' }}
+        if: ${{ env.KEYSTORE_BASE64 == '' }}
         uses: actions/cache@v4
         with:
           path: ~/.android/debug.keystore
