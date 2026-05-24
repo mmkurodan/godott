@@ -1,6 +1,7 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/mover.gd" id="1_mover"]
+[ext_resource type="PackedScene" path="res://Meshy_AI_Poised_at_the_Desk_0524082350_texture.glb" id="2_model"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
 albedo_color = Color(0.2, 0.22, 0.27, 1)
@@ -63,3 +64,6 @@ position = Vector3(0, 0, 0)
 mesh = SubResource("SphereMesh_ball")
 material_override = SubResource("StandardMaterial3D_ball")
 script = ExtResource("1_mover")
+
+[node name="DeskObject" parent="." instance=ExtResource("2_model")]
+position = Vector3(0, -4, 0)
