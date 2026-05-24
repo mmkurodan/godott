@@ -84,6 +84,17 @@ func apply_swipe_impulse(screen_delta: Vector2, camera_basis: Basis, viewport_si
 	_velocity = steered_velocity.normalized() * speed
 
 
+func get_motion_direction() -> Vector3:
+	if _velocity.length_squared() < 0.0001:
+		return Vector3.FORWARD
+
+	return _velocity.normalized()
+
+
+func get_surface_radius() -> float:
+	return object_radius
+
+
 func _random_direction() -> Vector3:
 	# ゼロベクトルだと正規化できないので、
 	# 十分な長さのランダム方向が出るまで引き直します。

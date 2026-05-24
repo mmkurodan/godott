@@ -7,11 +7,10 @@
 script = ExtResource("2_main_controller")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-position = Vector3(0, 4.5, 1.8)
-rotation_degrees = Vector3(-68, 0, 0)
+position = Vector3(0, 0, 0.5)
 current = true
 fov = 100.0
-near = 0.05
+near = 0.01
 
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
 position = Vector3(0, 3.5, 0)
