@@ -1,8 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://scripts/block_manager.gd" id="1_xw632"]
-[ext_resource type="PackedScene" path="res://scenes/Block.tscn" id="2_trnkp"]
-
-[node name="BlockManager" type="Node3D"]
-script = ExtResource("1_xw632")
-block_scene = ExtResource("2_trnkp")
