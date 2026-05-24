@@ -6,6 +6,7 @@ extends Node3D
 @export var touch_steer_threshold: float = 6.0
 @export var camera_swipe_threshold: float = 4.0
 @export var camera_orbit_sensitivity_degrees: float = 0.15
+@export var camera_surface_padding: float = 0.02
 @export var min_camera_pitch_degrees: float = -85.0
 @export var max_camera_pitch_degrees: float = 85.0
 
@@ -19,6 +20,18 @@ var _camera_pitch: float = 0.0
 func _ready() -> void:
 	_camera = get_node(camera_path) as Camera3D
 	_mover = get_node(mover_path) as Node3D
+
+	var offset: Vector3 = _camera.global_position - _get_camera_target()
+	if offset.length_squared() < 0.0001:
+		offset = Vector3.FORWARD
+
+	var horizontal_distance := Vector2(offset.x, offset.z).length()
+	_camera_yaw = atan2(offset.x, offset.z)
+	_camera_pitch = clamp(
+		atan2(offset.y, horizontal_distance),
+		deg_to_rad(min_camera_pitch_degrees),
+		deg_to_rad(max_camera_pitch_degrees)
+	)
 	_update_camera_transform()
 
 
@@ -89,15 +102,20 @@ func _orbit_camera(screen_delta: Vector2) -> void:
 
 func _update_camera_transform() -> void:
 	var target := _get_camera_target()
-	var reference_forward := _get_reference_forward_direction()
-	var reference_up := _get_reference_up_direction(reference_forward)
-	var yawed_forward := reference_forward.rotated(reference_up, _camera_yaw).normalized()
-	var right_direction := reference_up.cross(yawed_forward).normalized()
-	var view_direction := yawed_forward.rotated(right_direction, _camera_pitch).normalized()
-	var camera_up := view_direction.cross(right_direction).normalized()
+	var surface_radius := _get_camera_surface_radius() + maxf(camera_surface_padding, 0.0)
+	var horizontal_distance := cos(_camera_pitch) * surface_radius
+	var surface_offset := Vector3(
+		sin(_camera_yaw) * horizontal_distance,
+		sin(_camera_pitch) * surface_radius,
+		cos(_camera_yaw) * horizontal_distance
+	)
+	var surface_direction := surface_offset.normalized()
+	var reference_up := _get_reference_up_direction(surface_direction)
+	var right_direction := reference_up.cross(surface_direction).normalized()
+	var camera_up := surface_direction.cross(right_direction).normalized()
 
-	_camera.global_position = target + view_direction * _get_camera_surface_radius()
-	_camera.look_at(_camera.global_position + view_direction, camera_up)
+	_camera.global_position = target + surface_offset
+	_camera.look_at(_camera.global_position + surface_direction, camera_up)
 
 
 func _get_camera_target() -> Vector3:
@@ -105,17 +123,6 @@ func _get_camera_target() -> Vector3:
 		return _mover.global_position
 
 	return camera_target
-
-
-func _get_reference_forward_direction() -> Vector3:
-	if _mover != null and _mover.has_method("get_motion_direction"):
-		var motion_direction := _mover.call("get_motion_direction")
-		if motion_direction is Vector3:
-			var direction: Vector3 = motion_direction
-			if direction.length_squared() > 0.0001:
-				return direction.normalized()
-
-	return Vector3.FORWARD
 
 
 func _get_reference_up_direction(forward_direction: Vector3) -> Vector3:
