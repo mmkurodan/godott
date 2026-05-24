@@ -7,10 +7,10 @@ extends Node3D
 @export var camera_swipe_threshold: float = 4.0
 @export var camera_orbit_sensitivity_degrees: float = 0.15
 @export var min_camera_pitch_degrees: float = 15.0
-@export var max_camera_pitch_degrees: float = 75.0
+@export var max_camera_pitch_degrees: float = 85.0
 
 var _camera: Camera3D
-var _mover: Node
+var _mover: Node3D
 var _active_touches: Dictionary = {}
 var _camera_distance: float = 0.0
 var _camera_yaw: float = 0.0
@@ -19,14 +19,18 @@ var _camera_pitch: float = 0.0
 
 func _ready() -> void:
 	_camera = get_node(camera_path) as Camera3D
-	_mover = get_node(mover_path)
+	_mover = get_node(mover_path) as Node3D
 
-	var offset: Vector3 = _camera.global_position - camera_target
+	var offset: Vector3 = _camera.global_position - _get_camera_target()
 	var horizontal_distance := Vector2(offset.x, offset.z).length()
 
 	_camera_distance = offset.length()
 	_camera_yaw = atan2(offset.x, offset.z)
 	_camera_pitch = atan2(offset.y, horizontal_distance)
+	_update_camera_transform()
+
+
+func _process(_delta: float) -> void:
 	_update_camera_transform()
 
 
@@ -92,6 +96,7 @@ func _orbit_camera(screen_delta: Vector2) -> void:
 
 
 func _update_camera_transform() -> void:
+	var target := _get_camera_target()
 	var horizontal_distance := cos(_camera_pitch) * _camera_distance
 	var offset := Vector3(
 		sin(_camera_yaw) * horizontal_distance,
@@ -99,5 +104,18 @@ func _update_camera_transform() -> void:
 		cos(_camera_yaw) * horizontal_distance
 	)
 
-	_camera.global_position = camera_target + offset
-	_camera.look_at(camera_target, Vector3.UP)
+	_camera.global_position = target + offset
+
+	var up_direction := Vector3.UP
+	var view_direction := (target - _camera.global_position).normalized()
+	if absf(view_direction.dot(up_direction)) > 0.99:
+		up_direction = Vector3.FORWARD
+
+	_camera.look_at(target, up_direction)
+
+
+func _get_camera_target() -> Vector3:
+	if _mover != null:
+		return _mover.global_position
+
+	return camera_target

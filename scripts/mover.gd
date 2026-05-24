@@ -67,9 +67,10 @@ func apply_swipe_impulse(screen_delta: Vector2, camera_basis: Basis, viewport_si
 	if swipe_ratio <= 0.0:
 		return
 
+	var forward_direction := -camera_basis.z
 	var world_direction := (
 		camera_basis.x * screen_delta.x +
-		camera_basis.y * -screen_delta.y
+		forward_direction * -screen_delta.y
 	)
 
 	if world_direction.length_squared() < 0.0001:
