@@ -41,6 +41,7 @@ func _start_new_game() -> void:
 	_lives = INITIAL_LIVES
 	ui.update_score(_score)
 	ui.update_lives(_lives)
+	ui.show_message("READY")
 	block_manager.reset_blocks()
 	_prepare_round(_round_token, "READY", ROUND_DELAY)
 

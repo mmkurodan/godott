@@ -25,7 +25,6 @@ friction = 0.0
 script = ExtResource("1_h4r70")
 collision_layer = 1
 collision_mask = 1
-physics_material_override = SubResource("PhysicsMaterial_paddle")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 mesh = SubResource("BoxMesh_paddle")
