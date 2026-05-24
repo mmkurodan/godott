@@ -37,6 +37,7 @@ jobs:
         run: |
           mkdir -p "${HOME}/.android"
           printf '%s' "${KEYSTORE_BASE64}" | base64 --decode > "${HOME}/.android/debug.keystore"
+          : > "${HOME}/.android/use-secret-keystore"
 
       - name: Restore debug keystore
         if: ${{ secrets.KEYSTORE_BASE64 == '' }}
@@ -99,8 +100,21 @@ jobs:
           KEYSTORE_USER: ${{ secrets.KEYSTORE_USER }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
-          keystore_user="${KEYSTORE_USER:-androiddebugkey}"
-          keystore_password="${KEYSTORE_PASSWORD:-android}"
+          if [ -n "${KEYSTORE_USER}" ]; then
+            keystore_user="${KEYSTORE_USER}"
+          elif [ -f "${HOME}/.android/use-secret-keystore" ]; then
+            keystore_user="mykey"
+          else
+            keystore_user="androiddebugkey"
+          fi
+
+          if [ -n "${KEYSTORE_PASSWORD}" ]; then
+            keystore_password="${KEYSTORE_PASSWORD}"
+          elif [ -f "${HOME}/.android/use-secret-keystore" ]; then
+            keystore_password="micklab"
+          else
+            keystore_password="android"
+          fi
           export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="${HOME}/.android/debug.keystore"
           export GODOT_ANDROID_KEYSTORE_DEBUG_USER="${keystore_user}"
           export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD="${keystore_password}"
