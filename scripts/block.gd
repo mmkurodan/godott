@@ -1,5 +1,4 @@
 extends Area3D
-class_name BreakoutBlock
 
 signal broken(points: int)
 
@@ -14,7 +13,11 @@ var _destroyed: bool = false
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
-	var material := mesh_instance.material_override.duplicate() as StandardMaterial3D
+	var material := mesh_instance.material_override
+	if material == null:
+		material = StandardMaterial3D.new()
+	else:
+		material = material.duplicate()
 	mesh_instance.material_override = material
 	_apply_color()
 

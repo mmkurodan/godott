@@ -1,5 +1,4 @@
 extends CanvasLayer
-class_name BreakoutUI
 
 @onready var score_label: Label = $ScoreLabel
 @onready var lives_label: Label = $LivesLabel

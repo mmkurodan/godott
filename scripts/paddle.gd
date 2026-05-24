@@ -1,5 +1,4 @@
 extends CharacterBody3D
-class_name BreakoutPaddle
 
 @export var move_speed: float = 16.0
 @export var min_x: float = -4.7

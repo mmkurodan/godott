@@ -1,5 +1,4 @@
 extends Node3D
-class_name BreakoutBlockManager
 
 signal block_broken(points: int, remaining_blocks: int)
 signal all_blocks_cleared
@@ -27,17 +26,20 @@ func reset_blocks() -> void:
 		child.free()
 
 	_remaining_blocks = 0
+	if block_scene == null:
+		return
 
 	for layer in range(layers):
 		for row in range(rows):
 			for column in range(columns):
-				var block := block_scene.instantiate() as BreakoutBlock
+				var block := block_scene.instantiate() as Node3D
 				if block == null:
 					continue
 				add_child(block)
 				block.position = origin + Vector3(column * spacing.x, row * spacing.y, layer * spacing.z)
-				block.set_block_color(_palette[(row + column + layer) % _palette.size()])
-				block.broken.connect(_on_block_broken)
+				if block.has_method("set_block_color"):
+					block.call("set_block_color", _palette[(row + column + layer) % _palette.size()])
+				block.connect("broken", Callable(self, "_on_block_broken"))
 				_remaining_blocks += 1
 
 

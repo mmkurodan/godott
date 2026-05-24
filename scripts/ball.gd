@@ -1,5 +1,4 @@
 extends RigidBody3D
-class_name BreakoutBall
 
 @export var speed: float = 10.5
 @export var paddle_side_strength: float = 0.85

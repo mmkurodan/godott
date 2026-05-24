@@ -4,12 +4,12 @@ const INITIAL_LIVES: int = 3
 const ROUND_DELAY: float = 0.9
 const RESET_DELAY: float = 1.6
 
-@onready var paddle: BreakoutPaddle = $Paddle
-@onready var ball: BreakoutBall = $Ball
+@onready var paddle = $Paddle
+@onready var ball = $Ball
 @onready var ball_spawn: Marker3D = $BallSpawn
-@onready var block_manager: BreakoutBlockManager = $BlockManager
+@onready var block_manager = $BlockManager
 @onready var miss_zone: Area3D = $MissZone
-@onready var ui: BreakoutUI = $UI
+@onready var ui = $UI
 
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _score: int = 0
@@ -41,24 +41,28 @@ func _prepare_round(token: int, message: String, delay: float) -> void:
 	paddle.reset_paddle()
 	ball.reset_ball(ball_spawn.global_transform)
 	ui.show_message(message)
-	_launch_round(token, delay)
+	_schedule_launch_round(token, delay)
 
 
-func _launch_round(token: int, delay: float) -> void:
-	await get_tree().create_timer(delay).timeout
-	if token != _round_token or _game_finished:
-		return
-	ui.show_message("")
-	ball.launch(_random_launch_direction())
+func _schedule_launch_round(token: int, delay: float) -> void:
+	var timer := get_tree().create_timer(delay)
+	timer.timeout.connect(func() -> void:
+		if token != _round_token or _game_finished:
+			return
+		ui.show_message("")
+		ball.launch(_random_launch_direction())
+	)
 
 
 func _restart_after_delay(message: String) -> void:
 	var token := _round_token
 	ui.show_message(message)
-	await get_tree().create_timer(RESET_DELAY).timeout
-	if token != _round_token:
-		return
-	_start_new_game()
+	var timer := get_tree().create_timer(RESET_DELAY)
+	timer.timeout.connect(func() -> void:
+		if token != _round_token:
+			return
+		_start_new_game()
+	)
 
 
 func _random_launch_direction() -> Vector3:
