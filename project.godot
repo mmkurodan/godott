@@ -1,24 +1,36 @@
 ; Engine configuration file.
-; Godot 4.x で読み込める最小構成のプロジェクト設定です。
-; Android 向けのモバイルレンダラーを前提にしています。
+; Godot 4.x 3D breakout project.
 
 config_version=5
 
 [application]
 
-config/name="Godot Room Demo"
-config/icon="res://android/build/res/drawable-nodpi/splash.png"
-run/main_scene="res://main.tscn"
+config/name="Room Breaker 3D"
+config/icon="res://icon.svg"
+run/main_scene="res://Main.tscn"
 config/features=PackedStringArray("4.2", "Mobile")
 
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [filesystem]
 
 import/blender/enabled=false
+
+[input]
+
+move_left={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":65,"physical_keycode":65,"key_label":65,"unicode":97,"location":0,"echo":false)]
+}
+move_right={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":68,"physical_keycode":68,"key_label":68,"unicode":100,"location":0,"echo":false)]
+}
 
 [physics]
 
@@ -29,3 +41,4 @@ import/blender/enabled=false
 renderer/rendering_method="mobile"
 renderer/rendering_method.mobile="mobile"
 textures/vram_compression/import_etc2_astc=true
+anti_aliasing/quality/msaa_3d=1

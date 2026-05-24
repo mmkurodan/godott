@@ -1,0 +1,43 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/paddle.gd" id="1_h4r70"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_paddle"]
+size = Vector3(2.6, 0.45, 0.9)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_paddle"]
+size = Vector3(2.6, 0.45, 0.9)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hit_area"]
+size = Vector3(2.8, 0.9, 1.1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_paddle"]
+albedo_color = Color(0.219608, 0.643137, 0.988235, 1)
+emission_enabled = true
+emission = Color(0.0784314, 0.223529, 0.345098, 1)
+roughness = 0.2
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_paddle"]
+bounce = 1.0
+friction = 0.0
+
+[node name="Paddle" type="CharacterBody3D"]
+script = ExtResource("1_h4r70")
+collision_layer = 1
+collision_mask = 1
+physics_material_override = SubResource("PhysicsMaterial_paddle")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_paddle")
+material_override = SubResource("StandardMaterial3D_paddle")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_paddle")
+
+[node name="HitArea" type="Area3D" parent="."]
+position = Vector3(0, 0.18, 0)
+collision_layer = 4
+collision_mask = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="HitArea"]
+shape = SubResource("BoxShape3D_hit_area")

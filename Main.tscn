@@ -1,0 +1,67 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_4gsmt"]
+[ext_resource type="PackedScene" path="res://scenes/Room.tscn" id="2_ap1l5"]
+[ext_resource type="PackedScene" path="res://scenes/Paddle.tscn" id="3_gog7l"]
+[ext_resource type="PackedScene" path="res://scenes/Ball.tscn" id="4_wibdi"]
+[ext_resource type="PackedScene" path="res://scenes/BlockManager.tscn" id="5_5xt3l"]
+[ext_resource type="PackedScene" path="res://scenes/UI.tscn" id="6_0v7kx"]
+
+[sub_resource type="Environment" id="Environment_h2cda"]
+background_mode = 1
+background_color = Color(0.0352941, 0.0431373, 0.0784314, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.67, 0.78, 1)
+ambient_light_energy = 0.35
+glow_enabled = true
+glow_bloom = 0.05
+tonemap_mode = 2
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_miss"]
+size = Vector3(16, 1, 24)
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_4gsmt")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_h2cda")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+position = Vector3(0, 1.35, 7.2)
+rotation_degrees = Vector3(-8, 0, 0)
+current = true
+fov = 70.0
+near = 0.05
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-52, 28, 0)
+light_energy = 1.8
+shadow_enabled = true
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+position = Vector3(0, 3.3, 1.5)
+light_energy = 1.2
+omni_range = 20.0
+
+[node name="Room" parent="." instance=ExtResource("2_ap1l5")]
+
+[node name="Paddle" parent="." instance=ExtResource("3_gog7l")]
+position = Vector3(0, -4.2, 5.4)
+
+[node name="Ball" parent="." instance=ExtResource("4_wibdi")]
+position = Vector3(0, -3.65, 5.1)
+
+[node name="BallSpawn" type="Marker3D" parent="."]
+position = Vector3(0, -3.65, 5.1)
+
+[node name="BlockManager" parent="." instance=ExtResource("5_5xt3l")]
+
+[node name="MissZone" type="Area3D" parent="."]
+position = Vector3(0, -6.1, 0)
+collision_layer = 8
+collision_mask = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MissZone"]
+shape = SubResource("BoxShape3D_miss")
+
+[node name="UI" parent="." instance=ExtResource("6_0v7kx")]
