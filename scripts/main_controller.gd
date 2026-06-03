@@ -5,17 +5,25 @@ extends Node3D
 @export_node_path("SubViewport") var mirror_viewport_path: NodePath = NodePath("Room/MirrorViewport")
 @export_node_path("Camera3D") var mirror_camera_path: NodePath = NodePath("Room/MirrorViewport/MirrorCamera")
 @export_node_path("MeshInstance3D") var mirror_surface_path: NodePath = NodePath("Room/MirrorSurface")
-@export var touch_steer_threshold: float = 4.0
-@export var camera_swipe_threshold: float = 4.0
 @export var camera_orbit_sensitivity_degrees: float = 0.15
-@export var movement_swipe_scale: float = 8.0
+@export var movement_tap_deadzone: float = 20.0
 @export var min_camera_pitch_degrees: float = -85.0
 @export var max_camera_pitch_degrees: float = 85.0
-@export var camera_distance: float = 2.5
+@export var camera_distance: float = 0.0
+@export var min_camera_distance: float = 0.0
+@export var max_camera_distance: float = 4.0
+@export var pinch_zoom_sensitivity: float = 0.01
 
 const ROOM_LAYER_MASK: int = 1 << 0
 const AVATAR_LAYER_MASK: int = 1 << 1
 const MIRROR_LAYER_MASK: int = 1 << 2
+const FIRST_PERSON_THRESHOLD: float = 0.4
+const DRAG_SWITCH_THRESHOLD: float = 20.0
+
+# 0=tap/move  1=rotate  2=pinch
+const _TOUCH_TAP: int = 0
+const _TOUCH_ROTATE: int = 1
+const _TOUCH_PINCH: int = 2
 
 var _camera: Camera3D
 var _player: PlayerController
@@ -24,8 +32,11 @@ var _mirror_camera: Camera3D
 var _mirror_surface: MeshInstance3D
 var _active_touches: Dictionary = {}
 var _camera_yaw: float = PI
-var _camera_pitch: float = -deg_to_rad(15.0)
+var _camera_pitch: float = 0.0
 var _mouse_button_pressed: bool = false
+var _touch_mode: int = _TOUCH_TAP
+var _touch_start_pos: Vector2 = Vector2.ZERO
+var _prev_pinch_dist: float = 0.0
 
 
 func _ready() -> void:
@@ -46,6 +57,17 @@ func _process(_delta: float) -> void:
 	if _player != null:
 		_player.set_body_yaw(_camera_yaw)
 
+	# タップ/ホールドで進行方向指定（画面中央からのベクトルで移動）
+	if _active_touches.size() == 1 and _touch_mode == _TOUCH_TAP and _player != null:
+		var screen_center := get_viewport().get_visible_rect().size / 2.0
+		var touch_pos: Vector2 = _active_touches.values()[0]
+		var dir := touch_pos - screen_center
+		if dir.length() > movement_tap_deadzone:
+			_player.set_movement_input(Vector2(dir.x, -dir.y).normalized())
+		else:
+			_player.stop_movement()
+
+	# キーボード移動（PC用）
 	var keyboard_dir := Vector2.ZERO
 	if Input.is_key_pressed(KEY_W) or Input.is_action_pressed("ui_up"):
 		keyboard_dir.y += 1
@@ -74,7 +96,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _handle_mouse_button(event: InputEventMouseButton) -> void:
-	# 右ボタンのみ: タッチ操作は右ボタンを生成しないため競合しない
+	# 右ボタン限定: タッチ操作は右ボタンを生成しないため競合しない
 	if event.button_index == MOUSE_BUTTON_RIGHT:
 		_mouse_button_pressed = event.pressed
 
@@ -87,11 +109,24 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 func _handle_screen_touch(event: InputEventScreenTouch) -> void:
 	if event.pressed:
 		_active_touches[event.index] = event.position
+		if _active_touches.size() == 1:
+			_touch_mode = _TOUCH_TAP
+			_touch_start_pos = event.position
+		elif _active_touches.size() == 2:
+			_touch_mode = _TOUCH_PINCH
+			_prev_pinch_dist = _get_pinch_distance()
+			if _player != null:
+				_player.stop_movement()
 	else:
 		_active_touches.erase(event.index)
-
-	if _active_touches.size() != 1 and _player != null:
-		_player.stop_movement()
+		if _active_touches.is_empty():
+			_touch_mode = _TOUCH_TAP
+			if _player != null:
+				_player.stop_movement()
+		elif _active_touches.size() == 1:
+			# ピンチ解除: 残った1本指からタップ/回転モードに戻す
+			_touch_mode = _TOUCH_TAP
+			_touch_start_pos = _active_touches.values()[0]
 
 
 func _handle_screen_drag(event: InputEventScreenDrag) -> void:
@@ -99,54 +134,54 @@ func _handle_screen_drag(event: InputEventScreenDrag) -> void:
 		_active_touches[event.index] = event.position
 		return
 
-	var previous_touches: Dictionary = _active_touches.duplicate()
-	var previous_position: Vector2 = _active_touches[event.index]
-
+	var old_pos: Vector2 = _active_touches[event.index]
 	_active_touches[event.index] = event.position
 
-	match _active_touches.size():
-		1:
-			# 1本指スワイプ → アバター移動のみ
-			var swipe_delta: Vector2 = event.position - previous_position
-			if swipe_delta.length() >= touch_steer_threshold and _player != null:
-				_player.set_movement_input(_movement_input_from_swipe(swipe_delta))
-		_:
-			# 2本指スワイプ → カメラ回転のみ
+	if _active_touches.size() == 2:
+		# ピンチズーム
+		var new_dist := _get_pinch_distance()
+		var delta_dist := new_dist - _prev_pinch_dist
+		_prev_pinch_dist = new_dist
+		camera_distance = clampf(
+			camera_distance - delta_dist * pinch_zoom_sensitivity,
+			min_camera_distance,
+			max_camera_distance
+		)
+		_update_camera_cull_mask()
+		return
+
+	if _active_touches.size() != 1:
+		return
+
+	# タップからスワイプへの移行判定
+	if _touch_mode == _TOUCH_TAP:
+		var total_drag := (_active_touches[event.index] - _touch_start_pos).length()
+		if total_drag >= DRAG_SWITCH_THRESHOLD:
+			_touch_mode = _TOUCH_ROTATE
 			if _player != null:
 				_player.stop_movement()
-			var previous_center := _average_touch_position(previous_touches)
-			var current_center := _average_touch_position(_active_touches)
-			var swipe_delta: Vector2 = current_center - previous_center
-			if swipe_delta.length() >= camera_swipe_threshold:
-				_orbit_camera(swipe_delta)
+
+	if _touch_mode == _TOUCH_ROTATE:
+		_orbit_camera(event.position - old_pos)
+	# _TOUCH_TAP の場合は _process で毎フレーム方向を更新
 
 
-func _average_touch_position(touches: Dictionary) -> Vector2:
-	if touches.is_empty():
-		return Vector2.ZERO
-
-	var sum := Vector2.ZERO
-	for position in touches.values():
-		sum += position as Vector2
-	return sum / touches.size()
+func _get_pinch_distance() -> float:
+	if _active_touches.size() < 2:
+		return 0.0
+	var keys := _active_touches.keys()
+	return (_active_touches[keys[0]] as Vector2).distance_to(_active_touches[keys[1]] as Vector2)
 
 
 func _orbit_camera(screen_delta: Vector2) -> void:
 	var sensitivity := deg_to_rad(camera_orbit_sensitivity_degrees)
-
 	_camera_yaw -= screen_delta.x * sensitivity
-	_camera_pitch = clamp(
+	_camera_pitch = clampf(
 		_camera_pitch - screen_delta.y * sensitivity,
 		deg_to_rad(min_camera_pitch_degrees),
 		deg_to_rad(max_camera_pitch_degrees)
 	)
 	_update_camera_transform()
-
-
-func _movement_input_from_swipe(screen_delta: Vector2) -> Vector2:
-	var viewport_size := get_viewport().get_visible_rect().size
-	var viewport_scale := maxf(1.0, minf(viewport_size.x, viewport_size.y))
-	return (Vector2(screen_delta.x, -screen_delta.y) * movement_swipe_scale / viewport_scale).limit_length(1.0)
 
 
 func _compute_view_direction() -> Vector3:
@@ -161,25 +196,36 @@ func _update_camera_transform() -> void:
 		return
 
 	var view_dir := _compute_view_direction()
-	var look_target := _get_camera_look_target()
+	var look_target := _player.get_eye_position() if _player != null else global_position
+	var yaw_basis := Basis(Vector3.UP, _camera_yaw)
+	var right_dir := (yaw_basis * Vector3.RIGHT).normalized()
+	var cam_up := right_dir.cross(view_dir).normalized()
 
-	_camera.global_position = look_target - view_dir * camera_distance
-	_camera.look_at(look_target, Vector3.UP)
+	if camera_distance < 0.05:
+		# 一人称: カメラを目線位置に配置
+		_camera.global_position = look_target
+		_camera.look_at(look_target + view_dir, cam_up)
+	else:
+		# 三人称: カメラを後方に配置
+		_camera.global_position = look_target - view_dir * camera_distance
+		_camera.look_at(look_target, Vector3.UP)
 
 
-func _get_camera_look_target() -> Vector3:
-	if _player != null:
-		return _player.global_position + Vector3(0.0, 0.8, 0.0)
-	return global_position
+func _update_camera_cull_mask() -> void:
+	if _camera == null:
+		return
+	if camera_distance < FIRST_PERSON_THRESHOLD:
+		# 一人称: アバターを非表示（頭メッシュがカメラと交差するのを防ぐ）
+		_camera.cull_mask = ROOM_LAYER_MASK | MIRROR_LAYER_MASK
+	else:
+		# 三人称: アバターも表示
+		_camera.cull_mask = ROOM_LAYER_MASK | AVATAR_LAYER_MASK | MIRROR_LAYER_MASK
 
 
 func _configure_cameras() -> void:
-	if _camera != null:
-		# 三人称: 部屋・アバター・鏡面すべて描画
-		_camera.cull_mask = ROOM_LAYER_MASK | AVATAR_LAYER_MASK | MIRROR_LAYER_MASK
-
+	_update_camera_cull_mask()
 	if _mirror_camera != null and _camera != null:
-		# 鏡カメラ: 部屋・アバターを描画（鏡面自体は非表示で無限反射防止）
+		# 鏡カメラは部屋とアバターを描画（鏡面自体は非表示で無限反射防止）
 		_mirror_camera.cull_mask = ROOM_LAYER_MASK | AVATAR_LAYER_MASK
 		_mirror_camera.near = _camera.near
 		_mirror_camera.far = _camera.far
@@ -208,7 +254,7 @@ func _update_mirror_camera() -> void:
 	if _mirror_camera == null or _mirror_surface == null or _player == null:
 		return
 
-	# 鏡の反射はアバターの目線位置・向きで計算（三人称カメラ位置ではなく）
+	# アバターの目線位置・向きで反射計算（三人称カメラ位置でなく等身大の鏡に見せる）
 	var viewer_pos := _player.get_eye_position()
 	var avatar_forward := (Basis(Vector3.UP, _camera_yaw) * Vector3.FORWARD).normalized()
 
