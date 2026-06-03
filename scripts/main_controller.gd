@@ -11,6 +11,7 @@ extends Node3D
 @export var movement_swipe_scale: float = 8.0
 @export var min_camera_pitch_degrees: float = -85.0
 @export var max_camera_pitch_degrees: float = 85.0
+@export var camera_distance: float = 3.0
 
 const ROOM_LAYER_MASK: int = 1 << 0
 const AVATAR_LAYER_MASK: int = 1 << 1
@@ -24,6 +25,7 @@ var _mirror_surface: MeshInstance3D
 var _active_touches: Dictionary = {}
 var _camera_yaw: float = PI
 var _camera_pitch: float = 0.0
+var _mouse_button_pressed: bool = false
 
 
 func _ready() -> void:
@@ -44,6 +46,18 @@ func _process(_delta: float) -> void:
 	if _player != null:
 		_player.set_body_yaw(_camera_yaw)
 
+	var keyboard_dir := Vector2.ZERO
+	if Input.is_key_pressed(KEY_W) or Input.is_action_pressed("ui_up"):
+		keyboard_dir.y += 1
+	if Input.is_key_pressed(KEY_S) or Input.is_action_pressed("ui_down"):
+		keyboard_dir.y -= 1
+	if Input.is_key_pressed(KEY_A) or Input.is_action_pressed("ui_left"):
+		keyboard_dir.x -= 1
+	if Input.is_key_pressed(KEY_D) or Input.is_action_pressed("ui_right"):
+		keyboard_dir.x += 1
+	if keyboard_dir.length_squared() > 0.0 and _player != null:
+		_player.set_movement_input(keyboard_dir)
+
 	_update_camera_transform()
 	_update_mirror_camera()
 
@@ -53,6 +67,20 @@ func _input(event: InputEvent) -> void:
 		_handle_screen_touch(event)
 	elif event is InputEventScreenDrag:
 		_handle_screen_drag(event)
+	elif event is InputEventMouseButton:
+		_handle_mouse_button(event)
+	elif event is InputEventMouseMotion:
+		_handle_mouse_motion(event)
+
+
+func _handle_mouse_button(event: InputEventMouseButton) -> void:
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		_mouse_button_pressed = event.pressed
+
+
+func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
+	if _mouse_button_pressed:
+		_orbit_camera(event.relative)
 
 
 func _handle_screen_touch(event: InputEventScreenTouch) -> void:
@@ -129,22 +157,21 @@ func _update_camera_transform() -> void:
 	var right_direction := (yaw_basis * Vector3.RIGHT).normalized()
 	var yawed_forward := (yaw_basis * Vector3.FORWARD).normalized()
 	var view_direction := yawed_forward.rotated(right_direction, _camera_pitch).normalized()
-	var camera_up := right_direction.cross(view_direction).normalized()
 
-	_camera.global_position = target
-	_camera.look_at(_camera.global_position + view_direction, camera_up)
+	_camera.global_position = target - view_direction * camera_distance
+	_camera.look_at(target, Vector3.UP)
 
 
 func _get_camera_target() -> Vector3:
 	if _player != null:
-		return _player.get_eye_position()
+		return _player.global_position + Vector3(0.0, 0.8, 0.0)
 
 	return global_position
 
 
 func _configure_cameras() -> void:
 	if _camera != null:
-		_camera.cull_mask = ROOM_LAYER_MASK | MIRROR_LAYER_MASK
+		_camera.cull_mask = ROOM_LAYER_MASK | AVATAR_LAYER_MASK | MIRROR_LAYER_MASK
 
 	if _mirror_camera != null and _camera != null:
 		_mirror_camera.cull_mask = ROOM_LAYER_MASK | AVATAR_LAYER_MASK
