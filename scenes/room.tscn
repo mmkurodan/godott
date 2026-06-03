@@ -1,8 +1,9 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/player_controller.gd" id="1_player"]
 [ext_resource type="PackedScene" path="res://Meshy_AI_girl_biped_Animation_Walking_withSkin.glb" id="2_avatar"]
 [ext_resource type="PackedScene" path="res://Meshy_AI_Poised_at_the_Desk_0524082350_texture.glb" id="3_desk"]
+[ext_resource type="Script" path="res://scripts/floor_align.gd" id="4_floor_align"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
 albedo_color = Color(0.2, 0.22, 0.27, 1)
@@ -64,7 +65,8 @@ script = ExtResource("1_player")
 avatar_scene = ExtResource("2_avatar")
 
 [node name="Desk" parent="." instance=ExtResource("3_desk")]
-position = Vector3(2, -5, 0)
+position = Vector3(2, 0, 0)
+script = ExtResource("4_floor_align")
 
 [node name="MirrorSurface" type="MeshInstance3D" parent="."]
 layers = 4

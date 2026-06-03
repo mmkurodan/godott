@@ -11,7 +11,6 @@ extends Node3D
 @export var movement_swipe_scale: float = 8.0
 @export var min_camera_pitch_degrees: float = -85.0
 @export var max_camera_pitch_degrees: float = 85.0
-@export var camera_distance: float = 3.0
 
 const ROOM_LAYER_MASK: int = 1 << 0
 const AVATAR_LAYER_MASK: int = 1 << 1
@@ -46,6 +45,7 @@ func _process(_delta: float) -> void:
 	if _player != null:
 		_player.set_body_yaw(_camera_yaw)
 
+	# キーボード移動（PC/エディタ用）
 	var keyboard_dir := Vector2.ZERO
 	if Input.is_key_pressed(KEY_W) or Input.is_action_pressed("ui_up"):
 		keyboard_dir.y += 1
@@ -105,10 +105,12 @@ func _handle_screen_drag(event: InputEventScreenDrag) -> void:
 
 	match _active_touches.size():
 		1:
+			# 1本指スワイプ → アバター移動
 			var swipe_delta: Vector2 = event.position - previous_position
 			if swipe_delta.length() >= touch_steer_threshold and _player != null:
 				_player.set_movement_input(_movement_input_from_swipe(swipe_delta))
 		_:
+			# 2本指スワイプ → カメラ回転
 			if _player != null:
 				_player.stop_movement()
 			var previous_center := _average_touch_position(previous_touches)
@@ -157,22 +159,25 @@ func _update_camera_transform() -> void:
 	var right_direction := (yaw_basis * Vector3.RIGHT).normalized()
 	var yawed_forward := (yaw_basis * Vector3.FORWARD).normalized()
 	var view_direction := yawed_forward.rotated(right_direction, _camera_pitch).normalized()
+	var camera_up := right_direction.cross(view_direction).normalized()
 
-	_camera.global_position = target - view_direction * camera_distance
-	_camera.look_at(target, Vector3.UP)
+	_camera.global_position = target
+	_camera.look_at(_camera.global_position + view_direction, camera_up)
 
 
 func _get_camera_target() -> Vector3:
 	if _player != null:
-		return _player.global_position + Vector3(0.0, 0.8, 0.0)
+		return _player.get_eye_position()
 
 	return global_position
 
 
 func _configure_cameras() -> void:
+	# 主カメラ: 部屋と鏡面のみ表示（一人称のためアバター非表示）
 	if _camera != null:
-		_camera.cull_mask = ROOM_LAYER_MASK | AVATAR_LAYER_MASK | MIRROR_LAYER_MASK
+		_camera.cull_mask = ROOM_LAYER_MASK | MIRROR_LAYER_MASK
 
+	# 鏡カメラ: 部屋とアバターを表示（鏡面自体は非表示で無限反射防止）
 	if _mirror_camera != null and _camera != null:
 		_mirror_camera.cull_mask = ROOM_LAYER_MASK | AVATAR_LAYER_MASK
 		_mirror_camera.near = _camera.near
