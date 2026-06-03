@@ -11,6 +11,7 @@ extends Node3D
 @export var movement_swipe_scale: float = 8.0
 @export var min_camera_pitch_degrees: float = -85.0
 @export var max_camera_pitch_degrees: float = 85.0
+@export var camera_distance: float = 2.5
 
 const ROOM_LAYER_MASK: int = 1 << 0
 const AVATAR_LAYER_MASK: int = 1 << 1
@@ -23,7 +24,7 @@ var _mirror_camera: Camera3D
 var _mirror_surface: MeshInstance3D
 var _active_touches: Dictionary = {}
 var _camera_yaw: float = PI
-var _camera_pitch: float = 0.0
+var _camera_pitch: float = -deg_to_rad(15.0)
 var _mouse_button_pressed: bool = false
 
 
@@ -45,7 +46,6 @@ func _process(_delta: float) -> void:
 	if _player != null:
 		_player.set_body_yaw(_camera_yaw)
 
-	# キーボード移動（PC/エディタ用）
 	var keyboard_dir := Vector2.ZERO
 	if Input.is_key_pressed(KEY_W) or Input.is_action_pressed("ui_up"):
 		keyboard_dir.y += 1
@@ -74,7 +74,8 @@ func _input(event: InputEvent) -> void:
 
 
 func _handle_mouse_button(event: InputEventMouseButton) -> void:
-	if event.button_index == MOUSE_BUTTON_LEFT:
+	# 右ボタンのみ: タッチ操作は右ボタンを生成しないため競合しない
+	if event.button_index == MOUSE_BUTTON_RIGHT:
 		_mouse_button_pressed = event.pressed
 
 
@@ -105,12 +106,12 @@ func _handle_screen_drag(event: InputEventScreenDrag) -> void:
 
 	match _active_touches.size():
 		1:
-			# 1本指スワイプ → アバター移動
+			# 1本指スワイプ → アバター移動のみ
 			var swipe_delta: Vector2 = event.position - previous_position
 			if swipe_delta.length() >= touch_steer_threshold and _player != null:
 				_player.set_movement_input(_movement_input_from_swipe(swipe_delta))
 		_:
-			# 2本指スワイプ → カメラ回転
+			# 2本指スワイプ → カメラ回転のみ
 			if _player != null:
 				_player.stop_movement()
 			var previous_center := _average_touch_position(previous_touches)
@@ -125,10 +126,8 @@ func _average_touch_position(touches: Dictionary) -> Vector2:
 		return Vector2.ZERO
 
 	var sum := Vector2.ZERO
-
 	for position in touches.values():
 		sum += position as Vector2
-
 	return sum / touches.size()
 
 
@@ -150,35 +149,37 @@ func _movement_input_from_swipe(screen_delta: Vector2) -> Vector2:
 	return (Vector2(screen_delta.x, -screen_delta.y) * movement_swipe_scale / viewport_scale).limit_length(1.0)
 
 
+func _compute_view_direction() -> Vector3:
+	var yaw_basis := Basis(Vector3.UP, _camera_yaw)
+	var right_direction := (yaw_basis * Vector3.RIGHT).normalized()
+	var yawed_forward := (yaw_basis * Vector3.FORWARD).normalized()
+	return yawed_forward.rotated(right_direction, _camera_pitch).normalized()
+
+
 func _update_camera_transform() -> void:
 	if _camera == null:
 		return
 
-	var target := _get_camera_target()
-	var yaw_basis := Basis(Vector3.UP, _camera_yaw)
-	var right_direction := (yaw_basis * Vector3.RIGHT).normalized()
-	var yawed_forward := (yaw_basis * Vector3.FORWARD).normalized()
-	var view_direction := yawed_forward.rotated(right_direction, _camera_pitch).normalized()
-	var camera_up := right_direction.cross(view_direction).normalized()
+	var view_dir := _compute_view_direction()
+	var look_target := _get_camera_look_target()
 
-	_camera.global_position = target
-	_camera.look_at(_camera.global_position + view_direction, camera_up)
+	_camera.global_position = look_target - view_dir * camera_distance
+	_camera.look_at(look_target, Vector3.UP)
 
 
-func _get_camera_target() -> Vector3:
+func _get_camera_look_target() -> Vector3:
 	if _player != null:
-		return _player.get_eye_position()
-
+		return _player.global_position + Vector3(0.0, 0.8, 0.0)
 	return global_position
 
 
 func _configure_cameras() -> void:
-	# 主カメラ: 部屋と鏡面のみ表示（一人称のためアバター非表示）
 	if _camera != null:
-		_camera.cull_mask = ROOM_LAYER_MASK | MIRROR_LAYER_MASK
+		# 三人称: 部屋・アバター・鏡面すべて描画
+		_camera.cull_mask = ROOM_LAYER_MASK | AVATAR_LAYER_MASK | MIRROR_LAYER_MASK
 
-	# 鏡カメラ: 部屋とアバターを表示（鏡面自体は非表示で無限反射防止）
 	if _mirror_camera != null and _camera != null:
+		# 鏡カメラ: 部屋・アバターを描画（鏡面自体は非表示で無限反射防止）
 		_mirror_camera.cull_mask = ROOM_LAYER_MASK | AVATAR_LAYER_MASK
 		_mirror_camera.near = _camera.near
 		_mirror_camera.far = _camera.far
@@ -204,19 +205,20 @@ func _configure_mirror() -> void:
 
 
 func _update_mirror_camera() -> void:
-	if _camera == null or _mirror_camera == null or _mirror_surface == null:
+	if _mirror_camera == null or _mirror_surface == null or _player == null:
 		return
+
+	# 鏡の反射はアバターの目線位置・向きで計算（三人称カメラ位置ではなく）
+	var viewer_pos := _player.get_eye_position()
+	var avatar_forward := (Basis(Vector3.UP, _camera_yaw) * Vector3.FORWARD).normalized()
 
 	var mirror_origin := _mirror_surface.global_position
 	var mirror_normal := _mirror_surface.global_basis.z.normalized()
-	var camera_forward := -_camera.global_basis.z
-	var camera_up := _camera.global_basis.y
-	var reflected_position := _reflect_point(_camera.global_position, mirror_origin, mirror_normal)
-	var reflected_forward := _reflect_direction(camera_forward, mirror_normal).normalized()
-	var reflected_up := _reflect_direction(camera_up, mirror_normal).normalized()
+	var reflected_pos := _reflect_point(viewer_pos, mirror_origin, mirror_normal)
+	var reflected_forward := _reflect_direction(avatar_forward, mirror_normal).normalized()
 
-	_mirror_camera.global_position = reflected_position
-	_mirror_camera.look_at(reflected_position + reflected_forward, reflected_up)
+	_mirror_camera.global_position = reflected_pos
+	_mirror_camera.look_at(reflected_pos + reflected_forward, Vector3.UP)
 
 
 func _reflect_point(point: Vector3, plane_origin: Vector3, plane_normal: Vector3) -> Vector3:
